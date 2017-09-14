@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# Script to be used with cron to take still picture from RaspberryPi camera
+#
+
+#set filename for image output to contain timestamp
+STAMP=$(date +'%Y%m%d-%H%M%S')
+OUTNAME=/tmp/${STAMP}-image.jpg
+
+AWS_CONFIG_FILE="/root/.aws/config"
+#export AWS_ACCESS_KEY_ID={KEY_ID} #in case if the config doesn't work
+#export AWS_SECRET_ACCESS_KEY={SECRET_KEY} #in case if config doesnt work
+#export HOME=/root
+
+#take still picture with FullHD resolution and no thumbnail (save some space)
+/usr/bin/raspistill -w 1920 -h 1080 -th none -q 100 -o ${OUTNAME}
+
+# upload image and delete local copy afterwards 
+/usr/local/bin/aws s3 cp ${OUTNAME} s3://picamera-timelapse/
+rm ${OUTNAME}

@@ -1,0 +1,21 @@
+#!/bin/bash
+#update package sources
+apt-get update
+apt install -y awscli
+apt-get install -y mencoder
+
+#create directory for files and output
+mkdir /vid
+cd /vid
+
+#download everything from S3 bucket
+aws s3 cp --recursive s3://picamera-timelapse .
+
+#horrible and overcomplicated way to sieve out undwanted pictures because I was too lazy to craft proper cron. List of files is placed into text file for memcoder as a reference
+find . -size +1M -type f -exec ls {} + | grep -E "20170...-(05[3-5]|0[6-9].|1[0-9][0-2])...-image.jpg" | sort | cut -d '/' -f 2- > stills.txt
+
+#I found that formula here: http://mariovalle.name/mencoder/mencoder.html
+#adjusted for 60 FPS. 
+#optimal_bitrate = (50 * fps * width * height) / 256
+#output video will be saved in /vid
+mencoder -nosound -ovc lavc -lavcopts vcodec=mpeg4:aspect=16/9:vbitrate=24300000 -vf scale=1920:1080 -o orange2.avi -mf type=jpeg:fps=60 mf://@stills.txt
